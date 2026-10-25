@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arquitectura MQTT</title>
+<meta name="description" content="Infografía interactiva sobre cómo se diseña una arquitectura MQTT: broker, topics, QoS, sesiones, seguridad y escalado, con laboratorios y un simulador de invernadero inteligente.">
+<meta name="theme-color" content="#151a2d">
+<link rel="icon" type="image/png" href="assets/logo-unifranz.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+<a class="skip" href="#idea">Saltar al contenido</a>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="bar-brand" href="#top"><img src="assets/logo-unifranz.png" alt="Logo de la Universidad Privada Franz Tamayo"><span>Arquitectura MQTT</span></a>
+    <nav aria-label="Secciones">
+      <a href="#idea">La idea</a>
+      <a href="#piezas">Las piezas</a>
+      <a href="#topics">Topics</a>
+      <a href="#qos">QoS</a>
+      <a href="#estado">Memoria</a>
+      <a href="#diseno">Diseño</a>
+      <a href="#robustez">Seguridad y escala</a>
+      <a href="#simulador">Simulador</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= PORTADA ================= -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Arquitectura MQTT</h1>
+      <p class="lead">MQTT es el protocolo con el que millones de dispositivos se envían datos sin conocerse. Todos hablan con un intermediario, el broker, y él reparte cada mensaje a quien lo pidió. Aquí aprendes cómo se diseña un sistema así y lo pruebas con tus manos.</p>
+      <p class="howto">Baja por la página. Cada sección tiene una <strong>Prueba</strong> para mover o tocar, y al final hay un simulador completo de un invernadero inteligente.</p>
+
+      <div class="credits">
+        <img src="assets/logo-unifranz.png" alt="Logo de la Universidad Privada Franz Tamayo">
+        <div>
+          <p class="uni">UNIVERSIDAD PRIVADA FRANZ TAMAYO</p>
+          <p class="fac">FACULTAD DE INGENIERÍA · INGENIERÍA DE SISTEMAS</p>
+          <p class="foro"><strong>Foro:</strong> (ABRetos) Investigar cómo se diseña la Arquitectura MQTT</p>
+          <ul aria-label="Estudiantes">
+            <li>MARCOS ALEXANDER PANOZO PATTY</li>
+            <li>ARIO MAURICIO CHACON OROSCO</li>
+            <li>MARCOS JAVIER VARGAS CALLIZAYA</li>
+            <li>CRIS KLEBER BALLON CHIPANA</li>
+            <li>ADRIAN EDWIN AGUIRRE ROJAS</li>
+          </ul>
+          <p class="where">LA PAZ - BOLIVIA · 2026</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-viz">
+      <div id="hero-net"></div>
+      <div class="hero-actions">
+        <button class="btn btn--gold" id="hero-btn-t" type="button">Publicar temperatura</button>
+        <button class="btn btn--ghost-light" id="hero-btn-h" type="button">Publicar humedad</button>
+      </div>
+      <p class="hero-caption" id="hero-caption" aria-live="polite">Toca un botón: el sensor publica un dato y el broker lo reparte solo a quien se suscribió a ese tema.</p>
+      <div class="legend" aria-label="Filtros de suscripción">
+        <div><span>Panel escucha</span><code>invernadero/sala1/+</code></div>
+        <div><span>Alarma escucha</span><code>invernadero/+/temperatura</code></div>
+        <div><span>Base de datos escucha</span><code>invernadero/#</code></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main>
+
+<!-- ================= 1. LA IDEA ================= -->
+<section class="sec" id="idea">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Nadie habla con nadie: todos hablan con el broker</h2>
+      <p>En un sistema común, cada aplicación debe conocer la dirección de cada dispositivo y conectarse a él. MQTT cambia el modelo. Los dispositivos <strong>publican</strong> mensajes en un tema (<em>topic</em>) y las aplicaciones <strong>se suscriben</strong> a los temas que les interesan. En el centro está el <strong>broker</strong>, un servidor que recibe todo y lo reparte.</p>
+      <p>MQTT es un protocolo de mensajería publicar/suscribir, ligero y abierto, estandarizado por OASIS. Funciona sobre TCP/IP y está pensado para redes con poco ancho de banda y dispositivos pequeños.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card"><span class="tag tag--pub">Espacio</span><h3>No se conocen</h3><p>El sensor no sabe cuántas aplicaciones lo leen ni dónde están. Solo conoce la dirección del broker.</p></div>
+      <div class="card"><span class="tag tag--sub">Tiempo</span><h3>No coinciden en el tiempo</h3><p>Una aplicación puede estar apagada cuando llega un dato. Con una sesión persistente, el broker se lo guarda.</p></div>
+      <div class="card"><span class="tag tag--broker">Ritmo</span><h3>No se esperan</h3><p>El sensor publica y sigue con su trabajo. No queda bloqueado esperando que alguien procese el dato.</p></div>
+    </div>
+
+    <div class="lab" aria-labelledby="idea-title">
+      <p class="lab-title" id="idea-title"><strong>Prueba:</strong> cuenta las conexiones con y sin broker</p>
+      <p class="lab-sub">Mueve los controles y mira cuántos enlaces hay que mantener.</p>
+      <div class="lab-grid">
+        <div class="sim-sliders">
+          <div class="field">
+            <div class="head"><label for="idea-n">Dispositivos que publican</label><span class="value" id="idea-n-v">5</span></div>
+            <input id="idea-n" type="range" min="1" max="12" value="5">
+          </div>
+          <div class="field">
+            <div class="head"><label for="idea-m">Aplicaciones que leen</label><span class="value" id="idea-m-v">4</span></div>
+            <input id="idea-m" type="range" min="1" max="8" value="4">
+          </div>
+          <fieldset class="field">
+            <legend>Cómo se conectan</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="idea-mode" value="direct" checked> Conexión directa</label>
+              <label class="opt"><input type="radio" name="idea-mode" value="broker"> Con broker</label>
+            </div>
+          </fieldset>
+          <div class="idea-count" aria-live="polite">
+            <span><b id="idea-direct">20</b>enlaces directos</span>
+            <span><b id="idea-broker">9</b>enlaces con broker</span>
+          </div>
+          <p class="example" id="idea-example"><strong>Ejemplo:</strong> con 5 dispositivos y 4 aplicaciones, la conexión directa necesita 20 enlaces. Con broker bastan 9.</p>
+        </div>
+        <div class="idea-view" id="idea-view"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2. LAS PIEZAS ================= -->
+<section class="sec sec--white" id="piezas">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Cuatro piezas y una conversación corta</h2>
+      <p>Toda arquitectura MQTT se arma con las mismas piezas. Un mismo cliente puede cumplir dos papeles: el ventilador recibe órdenes (se suscribe) y avisa si está encendido (publica).</p>
+    </div>
+    <div class="cards">
+      <div class="card"><span class="tag tag--pub">Publicador</span><h3>Quien produce datos</h3><p>Un sensor, una app o una máquina. Envía un mensaje con un topic, un contenido (<em>payload</em>) y un nivel de QoS.</p></div>
+      <div class="card"><span class="tag tag--sub">Suscriptor</span><h3>Quien consume datos</h3><p>Un panel, una alarma o una base de datos. Pide un filtro de topics y recibe todo lo que coincide.</p></div>
+      <div class="card"><span class="tag tag--broker">Broker</span><h3>El repartidor</h3><p>Gestiona conexiones, guarda las suscripciones, compara topics con filtros, entrega mensajes y aplica la seguridad.</p></div>
+      <div class="card"><span class="tag tag--topic">Topic</span><h3>La dirección del mensaje</h3><p>Un texto jerárquico como <code>invernadero/sala1/temperatura</code>. No hace falta crearlo antes: existe cuando alguien publica en él.</p></div>
+    </div>
+
+    <div class="lab" aria-labelledby="seq-title">
+      <p class="lab-title" id="seq-title"><strong>Prueba:</strong> avanza paquete por paquete</p>
+      <p class="lab-sub">MQTT 5.0 define 15 tipos de paquete. Estos son los que aparecen en casi toda conversación.</p>
+      <div class="lab-grid">
+        <div>
+          <div class="row">
+            <button class="btn btn--primary" id="seq-next" type="button">Siguiente paquete</button>
+            <button class="btn" id="seq-reset" type="button">Reiniciar</button>
+          </div>
+          <p class="seq-text" id="seq-text" aria-live="polite">Pulsa «Siguiente paquete» para empezar. Un cliente se conecta al broker, se suscribe, recibe datos y se despide.</p>
+        </div>
+        <div class="seq" id="seq-host" aria-label="Diagrama de secuencia cliente y broker"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3. TOPICS ================= -->
+<section class="sec" id="topics">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Los topics: la dirección de cada mensaje</h2>
+      <p>Un topic es un texto en UTF-8 dividido en niveles con una barra <code>/</code>, como las carpetas de un disco. Distingue mayúsculas de minúsculas. Quien publica usa un topic exacto. Quien se suscribe usa un <strong>filtro</strong>, que puede incluir dos comodines:</p>
+      <p><code>+</code> reemplaza exactamente un nivel. <code>#</code> reemplaza todos los niveles restantes y solo puede ir al final. Los topics que empiezan con <code>$</code>, como <code>$SYS</code>, son del broker y los filtros que empiezan con comodín no los incluyen.</p>
+    </div>
+
+    <div class="lab" aria-labelledby="tp-title">
+      <p class="lab-title" id="tp-title"><strong>Prueba:</strong> escribe un filtro y mira qué topics coinciden</p>
+      <p class="lab-sub">Estos son los topics donde ya se publicó algo en el invernadero.</p>
+      <div class="lab-grid">
+        <div>
+          <div class="field">
+            <label for="tp-input">Filtro de suscripción</label>
+            <input id="tp-input" type="text" value="invernadero/+/temperatura" spellcheck="false" autocomplete="off" autocapitalize="off">
+          </div>
+          <div class="row" id="tp-presets" style="margin-top:12px" role="group" aria-label="Filtros de ejemplo"></div>
+          <p class="tp-msg" id="tp-msg" aria-live="polite"></p>
+        </div>
+        <ul class="tp-list" id="tp-list" aria-label="Topics publicados"></ul>
+      </div>
+    </div>
+
+    <h3 style="margin-top:46px">Buenas prácticas para diseñar el árbol</h3>
+    <div class="tbl-wrap">
+      <table class="compare">
+        <thead><tr><th>Evita</th><th>Prefiere</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr><td class="bad"><code>/invernadero/Sala 1/Temp</code></td><td class="good"><code>invernadero/sala1/temperatura</code></td><td>Sin barra inicial (crea un nivel vacío), sin espacios y con minúsculas, porque <code>Sala1</code> y <code>sala1</code> son topics distintos.</td></tr>
+          <tr><td class="bad"><code>datos</code> con todo mezclado en el payload</td><td class="good"><code>…/temperatura</code> y <code>…/humedad</code></td><td>Un topic por tipo de dato. Así cada suscriptor pide solo lo que necesita.</td></tr>
+          <tr><td class="bad"><code>temperatura/sala1/invernadero</code></td><td class="good"><code>invernadero/sala1/temperatura</code></td><td>De lo general a lo específico. Los filtros con <code>+</code> y <code>#</code> funcionan mejor así.</td></tr>
+          <tr><td class="bad">Un topic larguísimo en cada mensaje</td><td class="good">Nombres cortos y claros</td><td>El topic viaja dentro de cada paquete, así que cada carácter cuenta en redes lentas.</td></tr>
+          <tr><td class="bad">Identificar al sensor solo en el payload</td><td class="good"><code>invernadero/sala1/sensor07/temperatura</code></td><td>Con el identificador en el topic se pueden dar permisos por dispositivo.</td></tr>
+          <tr><td class="bad">Suscribirse a <code>#</code> en producción</td><td class="good">Filtros específicos</td><td>Llega todo el tráfico del broker. Úsalo solo para depurar.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4. QoS ================= -->
+<section class="sec sec--white" id="qos">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>QoS: cuánta garantía necesita cada mensaje</h2>
+      <p>La calidad de servicio (QoS) dice cuántas veces debe llegar un mensaje. A más garantía, más paquetes y más tiempo. Se elige por mensaje, no por sistema.</p>
+    </div>
+    <div class="cards">
+      <div class="card card--q card--q0"><span class="tag tag--sub">QoS 0 · como máximo una vez</span><h3>Dispara y olvida</h3><p>Un solo paquete, sin confirmación. Si se pierde, se pierde. Sirve para lecturas frecuentes que otra lectura reemplaza pronto.</p></div>
+      <div class="card card--q card--q1"><span class="tag tag--topic">QoS 1 · al menos una vez</span><h3>Con confirmación</h3><p>El receptor responde con PUBACK. Si la respuesta no llega, el emisor reenvía y el mensaje puede duplicarse. Sirve para eventos y órdenes seguras de repetir.</p></div>
+      <div class="card card--q card--q2"><span class="tag tag--pub">QoS 2 · exactamente una vez</span><h3>Cuatro pasos</h3><p>PUBLISH, PUBREC, PUBREL y PUBCOMP. Cuesta más, pero evita duplicados. Sirve cuando repetir la acción sería un error real.</p></div>
+    </div>
+    <p class="rule"><strong>Regla del tramo:</strong> el publicador elige el QoS al enviar, el suscriptor elige el máximo al suscribirse, y el broker entrega con el menor de los dos. Si publicas con QoS 2 y el suscriptor pidió QoS 1, ese tramo va con QoS 1.</p>
+
+    <div class="lab" aria-labelledby="q-title">
+      <p class="lab-title" id="q-title"><strong>Prueba:</strong> envía un mensaje y provoca fallos de red</p>
+      <p class="lab-sub">Usa «perder el mensaje» o «perder la confirmación» para ver cómo reacciona cada nivel.</p>
+      <div class="lab-grid">
+        <div class="sim-sliders">
+          <fieldset class="field">
+            <legend>QoS del publicador</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="qpub" value="0"> 0</label>
+              <label class="opt"><input type="radio" name="qpub" value="1" checked> 1</label>
+              <label class="opt"><input type="radio" name="qpub" value="2"> 2</label>
+            </div>
+          </fieldset>
+          <fieldset class="field">
+            <legend>QoS que pide el suscriptor</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="qsub" value="0"> 0</label>
+              <label class="opt"><input type="radio" name="qsub" value="1"> 1</label>
+              <label class="opt"><input type="radio" name="qsub" value="2" checked> 2</label>
+            </div>
+          </fieldset>
+          <p class="mono" id="q-eff" style="margin:0;max-width:none"></p>
+          <div class="field">
+            <label for="q-net">Estado de la red</label>
+            <select id="q-net">
+              <option value="0">Estable (sin pérdidas al azar)</option>
+              <option value="0.3">Inestable (30 % de pérdidas)</option>
+              <option value="0.6">Pésima (60 % de pérdidas)</option>
+            </select>
+          </div>
+          <div class="sim-btns">
+            <button class="btn btn--primary" id="q-send" type="button">Enviar mensaje</button>
+            <button class="btn" id="q-lose-pub" type="button">Perder el mensaje</button>
+            <button class="btn" id="q-lose-ack" type="button">Perder la confirmación</button>
+          </div>
+        </div>
+        <div>
+          <ol class="ledger" id="q-log" aria-live="polite" aria-label="Paquetes intercambiados"></ol>
+          <p class="q-sum" id="q-sum">Aquí verás cada paquete y cuántas veces recibió el mensaje el suscriptor.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 5. MEMORIA DEL BROKER ================= -->
+<section class="sec" id="estado">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Lo que el broker recuerda: retenidos, testamento y sesiones</h2>
+      <p>Publicar y suscribir no basta en el mundo real. Los dispositivos se apagan, las redes caen y los paneles se abren tarde. MQTT trae tres mecanismos para manejarlo.</p>
+    </div>
+
+    <div class="lab" aria-labelledby="st-title">
+      <p class="lab-title" id="st-title"><strong>Prueba:</strong> elige un mecanismo y pulsa los botones</p>
+      <div class="tabs" role="tablist" aria-label="Mecanismos de estado">
+        <button class="tab" role="tab" id="tab-ret" aria-controls="st-ret" aria-selected="true" type="button">Mensaje retenido</button>
+        <button class="tab" role="tab" id="tab-lwt" aria-controls="st-lwt" aria-selected="false" type="button" tabindex="-1">Testamento (LWT)</button>
+        <button class="tab" role="tab" id="tab-ses" aria-controls="st-ses" aria-selected="false" type="button" tabindex="-1">Sesión persistente</button>
+      </div>
+
+      <div class="tabpanel" id="st-ret" role="tabpanel" aria-labelledby="tab-ret">
+        <p><strong>El problema:</strong> un panel que se abre ahora no sabe la temperatura hasta que el sensor publique otra vez, y eso puede tardar minutos. <strong>La solución:</strong> si el sensor publica con la marca <em>retain</em>, el broker guarda el último mensaje de ese topic y se lo entrega al instante a cada suscriptor nuevo. Solo guarda uno por topic, y publicar un mensaje retenido vacío lo borra.</p>
+        <label class="opt" style="margin-bottom:12px"><input type="checkbox" id="ret-on" checked> Publicar con retain</label>
+        <div class="sim-btns">
+          <button class="btn btn--primary" id="ret-pub" type="button">Sensor publica una temperatura</button>
+          <button class="btn" id="ret-sub" type="button">Abrir un panel nuevo</button>
+          <button class="btn" id="ret-clear" type="button">Borrar el valor retenido</button>
+        </div>
+        <div class="state-box"><span class="pill" id="ret-pill">Guardado en el broker: <b>nada</b></span></div>
+        <ul class="log" id="ret-log" aria-live="polite"></ul>
+      </div>
+
+      <div class="tabpanel" id="st-lwt" role="tabpanel" aria-labelledby="tab-lwt" hidden>
+        <p><strong>El problema:</strong> si un sensor pierde la energía, no puede avisar que se fue. <strong>La solución:</strong> al conectarse deja en el broker un «testamento» (<em>Last Will and Testament</em>), un mensaje que el broker publica por él si la conexión se corta sin despedirse. El broker detecta la caída porque el cliente deja de enviar señales dentro del tiempo de <em>keep alive</em>.</p>
+        <label class="opt" style="margin-bottom:12px"><input type="checkbox" id="lwt-on" checked> El sensor deja un testamento al conectarse</label>
+        <div class="sim-btns">
+          <button class="btn" id="lwt-clean" type="button">Desconectar con DISCONNECT</button>
+          <button class="btn btn--danger" id="lwt-cut" type="button">Cortar la energía del sensor</button>
+          <button class="btn btn--primary" id="lwt-conn" type="button">Conectar el sensor</button>
+        </div>
+        <div class="state-box">
+          <span class="pill" id="lwt-sensor">Sensor: <b>conectado</b></span>
+          <span class="pill" id="lwt-panel">El panel muestra: <b>online</b></span>
+        </div>
+        <ul class="log" id="lwt-log" aria-live="polite"></ul>
+      </div>
+
+      <div class="tabpanel" id="st-ses" role="tabpanel" aria-labelledby="tab-ses" hidden>
+        <p><strong>El problema:</strong> un cliente se desconecta unos segundos y pierde los mensajes que llegaron en ese tiempo. <strong>La solución:</strong> una sesión persistente. El broker conserva las suscripciones del cliente y guarda en una cola los mensajes QoS 1 y 2 hasta que vuelva. En MQTT 3.1.1 se pide con <em>clean session = false</em>, y en MQTT 5 con <em>clean start</em> y un tiempo de vida de la sesión.</p>
+        <div class="row" style="margin-bottom:12px; gap:18px">
+          <div class="field"><label for="ses-type">Sesión del panel</label>
+            <select id="ses-type"><option value="persist">Persistente</option><option value="clean">Limpia (clean start)</option></select></div>
+          <div class="field"><label for="ses-qos">QoS de la suscripción</label>
+            <select id="ses-qos"><option value="1">QoS 1</option><option value="0">QoS 0</option></select></div>
+        </div>
+        <div class="sim-btns">
+          <button class="btn" id="ses-off" type="button">Desconectar el panel</button>
+          <button class="btn btn--primary" id="ses-pub" type="button">Publicar 3 lecturas</button>
+          <button class="btn" id="ses-on" type="button">Reconectar el panel</button>
+        </div>
+        <div class="state-box">
+          <span class="pill" id="ses-state">Panel: <b>conectado</b></span>
+          <span class="pill" id="ses-queue">Cola en el broker: <b>0</b></span>
+        </div>
+        <ul class="log" id="ses-log" aria-live="polite"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 6. DISEÑO ================= -->
+<section class="sec sec--white" id="diseno">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Cómo se diseña la arquitectura, paso a paso</h2>
+      <p>Diseñar con MQTT es tomar seis decisiones en orden. Lo que sigue es el método aplicado a un invernadero inteligente, el mismo caso del simulador.</p>
+    </div>
+
+    <ol class="steps">
+      <li><h3>Lista a los actores</h3><p>Quién produce datos y quién los consume: sensores de temperatura y humedad, un ventilador, un panel, una alarma, una base de datos. Un dispositivo puede ser ambas cosas.</p></li>
+      <li><h3>Dibuja el árbol de topics</h3><p>De lo general a lo específico, como <code>invernadero/sala1/temperatura</code>. Separa lo que miden los sensores, las órdenes (<code>cmd</code>) y el estado de cada dispositivo.</p></li>
+      <li><h3>Elige el QoS de cada flujo</h3><p>Lecturas frecuentes con QoS 0, eventos y órdenes seguras de repetir con QoS 1, y acciones que no se pueden repetir con QoS 2.</p></li>
+      <li><h3>Decide qué recuerda el broker</h3><p>Retain para el último valor, testamento para detectar caídas y sesiones persistentes para los clientes que se desconectan.</p></li>
+      <li><h3>Protege el acceso</h3><p>Cifrado TLS en el canal, credenciales propias para cada dispositivo y permisos por topic que nieguen todo lo que no esté permitido.</p></li>
+      <li><h3>Prepara el crecimiento</h3><p>Varios brokers en clúster, suscripciones compartidas para repartir trabajo y puentes (<em>bridges</em>) para conectar sedes o sistemas externos.</p></li>
+    </ol>
+
+    <h3 style="margin-top:40px">Ficha de diseño del invernadero</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Flujo</th><th>Topic</th><th>QoS</th><th>Retain</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr><td>Temperatura cada pocos segundos</td><td><code>invernadero/sala1/temperatura</code></td><td class="num"><span class="qbadge q0">0</span></td><td>Sí</td><td>Si una lectura se pierde, la siguiente la reemplaza. Un panel nuevo ve el último valor al instante.</td></tr>
+          <tr><td>Alarma de calor</td><td><code>invernadero/sala1/alarma</code></td><td class="num"><span class="qbadge q1">1</span></td><td>No</td><td>No debe perderse, y recibirla dos veces no causa daño.</td></tr>
+          <tr><td>Orden al ventilador</td><td><code>invernadero/sala1/ventilador/cmd</code></td><td class="num"><span class="qbadge q1">1</span></td><td>No</td><td>Retener una orden vieja la ejecutaría de nuevo cuando el ventilador se reconecte.</td></tr>
+          <tr><td>Dosis de fertilizante</td><td><code>invernadero/sala1/dosificador/cmd</code></td><td class="num"><span class="qbadge q2">2</span></td><td>No</td><td>Repetirla sería un error real. Debe ejecutarse exactamente una vez.</td></tr>
+          <tr><td>Estado del sensor (testamento)</td><td><code>invernadero/sala1/estado</code></td><td class="num"><span class="qbadge q1">1</span></td><td>Sí</td><td>Quien llegue tarde necesita saber si el sensor sigue vivo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:44px">La arquitectura completa, de punta a punta</h3>
+    <div class="layers" role="group" aria-label="Capas de la arquitectura">
+      <div class="layer"><h4>Dispositivos</h4><ul class="pubc"><li>Sensor de temperatura</li><li>Sensor de humedad</li><li>Ventilador y bomba</li></ul></div>
+      <div class="layer" data-link="MQTT"><h4>Puerta de enlace</h4><ul><li>Traduce protocolos de sensores que no hablan MQTT</li><li>Guarda datos si cae internet</li></ul></div>
+      <div class="layer layer--b" data-link="TLS"><h4>Clúster de brokers</h4><ul><li>Nodo 1</li><li>Nodo 2</li><li>Nodo 3</li><li>Autenticación y permisos</li></ul></div>
+      <div class="layer" data-link="MQTT"><h4>Aplicaciones</h4><ul class="subc"><li>Panel de control</li><li>Alarma y reglas</li><li>Base de datos</li><li>Otro broker (puente)</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 7. SEGURIDAD Y ESCALA ================= -->
+<section class="sec" id="robustez">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Seguridad y escala: que aguante ataques y crecimiento</h2>
+      <p>MQTT por sí solo confía en la red: no cifra nada ni verifica a nadie. La seguridad se agrega en capas alrededor del broker. Y cuando llegan miles de dispositivos, el trabajo se reparte.</p>
+    </div>
+
+    <div class="lab" aria-labelledby="sc-title">
+      <p class="lab-title" id="sc-title"><strong>Prueba:</strong> activa las capas y lanza un ataque</p>
+      <p class="lab-sub">Cada capa frena un tipo distinto de ataque. Ninguna reemplaza a las otras.</p>
+      <div class="shield-grid">
+        <div class="sim-sliders">
+          <fieldset class="field">
+            <legend>Capas activas</legend>
+            <div class="opts" style="display:grid;gap:8px">
+              <label class="opt"><input type="checkbox" id="sc-tls"> Cifrado TLS (puerto 8883)</label>
+              <label class="opt"><input type="checkbox" id="sc-auth"> Autenticación por dispositivo</label>
+              <label class="opt"><input type="checkbox" id="sc-acl"> Permisos por topic (ACL)</label>
+            </div>
+          </fieldset>
+          <div class="attacks">
+            <button class="btn attack" type="button" data-attack="sniff">Escuchar el tráfico en la red</button>
+            <button class="btn attack" type="button" data-attack="fake">Conectar un cliente falso sin credenciales</button>
+            <button class="btn attack" type="button" data-attack="spy">Un sensor válido intenta leer <code>#</code> para espiar</button>
+          </div>
+        </div>
+        <p class="sc-result" id="sc-result" aria-live="polite">Elige un ataque. Empieza con todas las capas apagadas y ve qué pasa, luego enciéndelas una por una.</p>
+      </div>
+    </div>
+
+    <div class="lab" aria-labelledby="sh-title">
+      <p class="lab-title" id="sh-title"><strong>Prueba:</strong> reparte el trabajo entre tres procesadores</p>
+      <p class="lab-sub">Tres copias de una aplicación procesan lecturas. Una suscripción normal da a cada copia todos los mensajes; una compartida los reparte.</p>
+      <div class="lab-grid">
+        <div class="sim-sliders">
+          <fieldset class="field">
+            <legend>Tipo de suscripción</legend>
+            <div class="opts" style="display:grid;gap:8px">
+              <label class="opt"><input type="radio" name="sh-mode" value="normal" checked> Normal: <code>invernadero/+/temperatura</code></label>
+              <label class="opt"><input type="radio" name="sh-mode" value="shared"> Compartida: <code>$share/proc/invernadero/+/temperatura</code></label>
+            </div>
+          </fieldset>
+          <div class="sim-btns"><button class="btn btn--primary" id="sh-send" type="button">Enviar 12 lecturas</button><button class="btn" id="sh-reset" type="button">Reiniciar</button></div>
+          <p class="example"><strong>Ejemplo:</strong> con 12 lecturas, la suscripción normal hace 36 procesamientos (cada copia hace los 12). La compartida hace 12, cuatro por copia.</p>
+        </div>
+        <div>
+          <div class="bars" id="sh-bars"></div>
+          <p class="sh-total" id="sh-total">Procesamientos totales: 0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 8. SIMULADOR ================= -->
+<section class="sec sec--white" id="simulador">
+  <div class="wrap">
+    <div class="sec-intro">
+      <h2>Simula un invernadero con MQTT</h2>
+      <p>Aquí controlas todo el sistema. Cambia la temperatura y mira cómo el dato viaja del sensor al broker y de ahí a cuatro aplicaciones. Cuando pase de 30 °C, la alarma publica una orden y el ventilador se enciende solo.</p>
+      <ol>
+        <li>Mueve la <strong>temperatura</strong> o pulsa <strong>Ola de calor</strong>.</li>
+        <li>Cambia el <strong>QoS</strong> y la <strong>pérdida de red</strong> y compara cómo llegan los mensajes.</li>
+        <li>Desconecta el Panel o la Base de datos, publica y reconecta: mira quién conserva los mensajes.</li>
+        <li>Activa las capas de seguridad y lanza al intruso.</li>
+      </ol>
+    </div>
+
+    <div class="sim-wrap">
+      <div class="sim-top">
+        <div>
+          <div class="scroll-x"><div id="sim-net"></div></div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Panel del invernadero (lo que ve la persona)</h3>
+            <div class="readout">
+              <div><small>Temperatura</small><b id="ro-temp">—</b></div>
+              <div><small>Humedad</small><b id="ro-hum">—</b></div>
+              <div id="ro-fan-box"><small>Ventilador (real)</small><b id="ro-fan">apagado</b></div>
+              <div id="ro-alarm-box"><small>Alarma</small><b id="ro-alarm">normal</b></div>
+              <div id="ro-state-box"><small>Sensor</small><b id="ro-state">—</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-controls">
+          <div class="panel">
+            <h3>Sensores</h3>
+            <div class="sim-sliders">
+              <div class="field"><div class="head"><label for="sim-temp">Temperatura real</label><span class="value" id="sim-temp-v">24.0 °C</span></div><input id="sim-temp" type="range" min="10" max="40" step="0.5" value="24"></div>
+              <div class="field"><div class="head"><label for="sim-hum">Humedad real</label><span class="value" id="sim-hum-v">62 %</span></div><input id="sim-hum" type="range" min="20" max="95" step="1" value="62"></div>
+              <div class="sim-two">
+                <div class="field"><label for="sim-qos">QoS de los sensores</label><select id="sim-qos"><option value="0">QoS 0</option><option value="1" selected>QoS 1</option><option value="2">QoS 2</option></select></div>
+                <div class="field"><label for="sim-loss">Pérdida de red</label><select id="sim-loss"><option value="0">0 %</option><option value="0.25">25 %</option><option value="0.5">50 %</option></select></div>
+              </div>
+              <div class="sim-toggles">
+                <label class="opt"><input type="checkbox" id="sim-retain" checked> Retain</label>
+                <label class="opt"><input type="checkbox" id="sim-lwt" checked> Testamento</label>
+                <label class="opt"><input type="checkbox" id="sim-auto"> Publicar cada 2,5 s</label>
+              </div>
+              <div class="sim-btns">
+                <button class="btn btn--primary btn--small" id="sim-pub" type="button">Publicar ahora</button>
+                <button class="btn btn--small" id="sim-heat" type="button">Ola de calor</button>
+                <button class="btn btn--small btn--danger" id="sim-kill" type="button">Cortar sensor</button>
+                <button class="btn btn--small" id="sim-revive" type="button">Reconectar sensor</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Seguridad</h3>
+            <div class="sim-toggles">
+              <label class="opt"><input type="checkbox" id="sim-tls"> Cifrado TLS</label>
+              <label class="opt"><input type="checkbox" id="sim-auth"> Autenticación</label>
+              <label class="opt"><input type="checkbox" id="sim-acl"> Permisos (ACL)</label>
+            </div>
+            <div class="sim-btns" style="margin-top:12px">
+              <button class="btn btn--small btn--danger" id="sim-intruder" type="button">Intruso intenta espiar con #</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-two" style="margin-top:18px">
+        <div class="panel">
+          <h3>Suscriptores</h3>
+          <div class="tbl-wrap" style="margin:0">
+            <table class="clients">
+              <thead><tr><th>Cliente</th><th>Filtro</th><th>Sesión</th><th>Recibió</th><th></th></tr></thead>
+              <tbody id="sim-clients"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Un espía mira el cable de red</h3>
+          <ul class="sniffer" id="sim-sniff" aria-label="Paquetes vistos en la red"></ul>
+          <p class="sniff-note" id="sniff-note">Sin TLS, cualquiera en la red lee los datos y las claves.</p>
+        </div>
+      </div>
+
+      <div class="sim-log">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <h3 style="margin:0">Registro del broker</h3>
+          <button class="btn btn--small" id="sim-reset" type="button">Reiniciar simulador</button>
+        </div>
+        <ul class="log" id="sim-log" aria-live="off"></ul>
+      </div>
+    </div>
+
+    <h3 style="margin-top:56px">En resumen</h3>
+    <div class="summary">
+      <div><b>Desacopla</b>Publicadores y suscriptores no se conocen: ambos conocen al broker.</div>
+      <div><b>Organiza con topics</b>Un árbol bien pensado hace simples los filtros y los permisos.</div>
+      <div><b>Elige el QoS por flujo</b>Cada mensaje paga solo la garantía que necesita.</div>
+      <div><b>Usa la memoria del broker</b>Retain, testamento y sesiones cubren apagados y caídas.</div>
+      <div><b>Protege en capas</b>TLS, autenticación y ACL frenan ataques distintos.</div>
+      <div><b>Escala repartiendo</b>Clúster y suscripciones compartidas aguantan el crecimiento.</div>
+    </div>
+
+    <h3 style="margin-top:50px">Fuentes consultadas</h3>
+    <ol class="sources">
+      <li><a href="https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html">OASIS, MQTT Version 5.0 (especificación oficial)</a></li>
+      <li><a href="https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/">HiveMQ, MQTT Essentials Parte 5: topics, comodines y buenas prácticas</a></li>
+      <li><a href="https://www.hivemq.com/blog/mqtt-essentials-part-6-mqtt-quality-of-service-levels/">HiveMQ, MQTT Essentials Parte 6: niveles de QoS</a></li>
+      <li><a href="https://www.emqx.com/en/blog/introduction-to-mqtt-qos">EMQX, MQTT QoS 0, 1, 2 explicado</a></li>
+      <li><a href="https://learn.microsoft.com/azure/event-grid/mqtt-support">Microsoft, funciones MQTT del broker de Azure Event Grid (sesiones, clean start, testamento)</a></li>
+      <li><a href="https://docs.cedalo.com/mosquitto/2.5/mqtt-vocabulary">Cedalo, vocabulario MQTT (clean session, retenidos, testamento)</a></li>
+      <li><a href="https://docs.emqx.com/en/emqx/latest/guides/access-control/security-checklist.html">EMQX, lista de verificación de seguridad</a></li>
+      <li><a href="https://pi3g.com/?p=10410">pi3g, diseño del árbol de topics en MQTT</a></li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <img src="assets/logo-unifranz.png" alt="">
+    <span>Foro: (ABRetos) Investigar cómo se diseña la Arquitectura MQTT · Universidad Privada Franz Tamayo · Ingeniería de Sistemas · La Paz - Bolivia · 2026</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
