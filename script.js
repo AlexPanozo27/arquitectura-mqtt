@@ -225,18 +225,18 @@ class Net {
     $('#idea-example').innerHTML = `<strong>Ejemplo:</strong> con ${N} dispositivos y ${M} aplicaciones, la conexión directa necesita ${N * M} enlaces. Con broker bastan ${N + M}.`;
     svg.textContent = '';
     const L = ys(N), R = ys(M), direct = mode() === 'direct';
-    const lines = el('g', { stroke: direct ? '#b3261e' : '#7c1d30', 'stroke-width': direct ? 1 : 1.6, opacity: direct ? 0.4 : 0.75 }, svg);
+    const lines = el('g', { stroke: direct ? '#b3261e' : '#6c3ce0', 'stroke-width': direct ? 1 : 1.6, opacity: direct ? 0.4 : 0.75 }, svg);
     if (direct) {
       L.forEach((y1) => R.forEach((y2) => el('line', { x1: 56, y1, x2: 364, y2 }, lines)));
     } else {
       L.forEach((y) => el('line', { x1: 56, y1: y, x2: 210, y2: 150 }, lines));
       R.forEach((y) => el('line', { x1: 210, y1: 150, x2: 364, y2: y }, lines));
-      el('circle', { cx: 210, cy: 150, r: 34, fill: '#151a2d', stroke: '#b2862b', 'stroke-width': 3 }, svg);
+      el('circle', { cx: 210, cy: 150, r: 34, fill: '#2a1670', stroke: '#ffc247', 'stroke-width': 3 }, svg);
       const t = el('text', { x: 210, y: 155, 'text-anchor': 'middle', fill: '#fff', 'font-family': 'Bricolage Grotesque, sans-serif', 'font-weight': 650, 'font-size': 14 }, svg);
       t.textContent = 'Broker';
     }
-    L.forEach((y) => el('circle', { cx: 56, cy: y, r: 9, fill: '#7c1d30', stroke: '#fff', 'stroke-width': 2 }, svg));
-    R.forEach((y) => el('circle', { cx: 364, cy: y, r: 9, fill: '#14777b', stroke: '#fff', 'stroke-width': 2 }, svg));
+    L.forEach((y) => el('circle', { cx: 56, cy: y, r: 9, fill: '#6c3ce0', stroke: '#fff', 'stroke-width': 2 }, svg));
+    R.forEach((y) => el('circle', { cx: 364, cy: y, r: 9, fill: '#0b8a96', stroke: '#fff', 'stroke-width': 2 }, svg));
   }
   [n, m].forEach((i) => i.addEventListener('input', draw));
   $$('input[name="idea-mode"]').forEach((i) => i.addEventListener('change', draw));

@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Arquitectura MQTT</title>
 <meta name="description" content="Infografía interactiva sobre cómo se diseña una arquitectura MQTT: broker, topics, QoS, sesiones, seguridad y escalado, con laboratorios y un simulador de invernadero inteligente.">
-<meta name="theme-color" content="#151a2d">
+<meta name="theme-color" content="#6c3ce0">
 <link rel="icon" type="image/png" href="assets/logo-unifranz.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Nunito+Sans:opsz,wght@6..12,300..900&family=Poppins:wght@600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body id="top">
@@ -35,7 +35,7 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <h1>Arquitectura MQTT</h1>
+      <h1>Arquitectura <span class="grad">MQTT</span></h1>
       <p class="lead">MQTT es el protocolo con el que millones de dispositivos se envían datos sin conocerse. Todos hablan con un intermediario, el broker, y él reparte cada mensaje a quien lo pidió. Aquí aprendes cómo se diseña un sistema así y lo pruebas con tus manos.</p>
       <p class="howto">Baja por la página. Cada sección tiene una <strong>Prueba</strong> para mover o tocar, y al final hay un simulador completo de un invernadero inteligente.</p>
 
@@ -70,6 +70,12 @@
         <div><span>Base de datos escucha</span><code>invernadero/#</code></div>
       </div>
     </div>
+  </div>
+
+  <div class="wrap stats" aria-label="La página en números">
+    <div><b>3</b>niveles de QoS</div>
+    <div><b>2</b>comodines: + y #</div>
+    <div><b>1</b>simulador completo</div>
   </div>
 </section>
 
